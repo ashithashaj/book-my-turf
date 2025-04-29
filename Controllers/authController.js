@@ -65,3 +65,15 @@ exports.login = async (req, res) => {
   const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
   res.json({ token });
 };
+
+
+exports.getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select("-password -otp");
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ msg: "Server error" });
+  }
+};
