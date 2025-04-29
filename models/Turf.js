@@ -7,6 +7,8 @@ const turfSchema = new mongoose.Schema({
   locationId: { type: mongoose.Schema.Types.ObjectId, ref: "Location" },
   rating: { type: Number, default: 0 },
   votes: { type: Number, default: 0 },
+  phoneNumber: String,
+  price: Number,
   photos: [String],
 });
 
