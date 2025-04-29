@@ -84,21 +84,42 @@ exports.updateProfile = async (req, res) => {
     const userId = req.user.userId;
     const { username, email, phoneNumber } = req.body;
 
-    // Basic validation (optional but recommended)
-    if (!username || !email || !phoneNumber) {
+    if (!username || !email || !phoneNumber)
       return res.status(400).json({ msg: "All fields are required" });
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    let emailChanged = false;
+
+    // If email is changed
+    if (user.email !== email) {
+      const existing = await User.findOne({ email });
+      if (existing)
+        return res.status(400).json({ msg: "Email already in use" });
+
+      user.email = email;
+      user.isVerified = false;
+      const otp = Math.floor(100000 + Math.random() * 900000);
+      user.otp = otp;
+
+      await sendEmailOtp(email, otp);
+      emailChanged = true;
     }
 
-    // Update the user
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { username, email, phoneNumber },
-      { new: true, runValidators: true }
-    ).select("-password -otp");
+    // Update other fields
+    user.username = username;
+    user.phoneNumber = phoneNumber;
+    await user.save();
 
-    if (!updatedUser) return res.status(404).json({ msg: "User not found" });
+    const userData = user.toObject();
+    delete userData.password;
+    delete userData.otp;
 
-    res.json(updatedUser);
+    res.status(200).json({
+      ...userData,
+      redirectToVerify: emailChanged, // 👈 frontend can now use this
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Server error" });
