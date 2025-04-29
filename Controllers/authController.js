@@ -77,3 +77,30 @@ exports.getMe = async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 };
+
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { username, email, phoneNumber } = req.body;
+
+    // Basic validation (optional but recommended)
+    if (!username || !email || !phoneNumber) {
+      return res.status(400).json({ msg: "All fields are required" });
+    }
+
+    // Update the user
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { username, email, phoneNumber },
+      { new: true, runValidators: true }
+    ).select("-password -otp");
+
+    if (!updatedUser) return res.status(404).json({ msg: "User not found" });
+
+    res.json(updatedUser);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Server error" });
+  }
+};
